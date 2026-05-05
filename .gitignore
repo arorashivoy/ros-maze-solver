@@ -1,0 +1,29 @@
+# colcon build artifacts — auto-generated, never commit
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code project state — local only
+.claude/
+
+# ROS bag files (large, regenerate as needed)
+*.bag
+*.db3
+*.mcap
