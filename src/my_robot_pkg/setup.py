@@ -28,6 +28,8 @@ setup(
             'hello_publisher = my_robot_pkg.hello_publisher:main',
             'hello_subscriber = my_robot_pkg.hello_subscriber:main',
             'fake_scan_publisher = my_robot_pkg.fake_scan_publisher:main',
+            'laser_reader = my_robot_pkg.laser_reader:main',
+            'obstacle_avoider = my_robot_pkg.obstacle_avoider:main',
         ],
     },
 )
