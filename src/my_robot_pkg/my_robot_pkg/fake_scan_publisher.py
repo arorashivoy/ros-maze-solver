@@ -6,6 +6,8 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
+from visualization_msgs.msg import Marker, MarkerArray
+from geometry_msgs.msg import Point
 
 
 class FakeScanPublisher(Node):
@@ -44,7 +46,34 @@ class FakeScanPublisher(Node):
         )
         self.timer = self.create_timer(self.publish_period, self.publish_scan)
 
+        # Wall visualization for RViz. Latched-style: depth=1, RELIABLE so late
+        # subscribers (e.g. RViz) still get the markers when they connect.
+        self.wall_pub = self.create_publisher(MarkerArray, '/world_walls', 1)
+        self.wall_timer = self.create_timer(1.0, self.publish_walls)
+
         self.get_logger().info('fake_scan_publisher up — 4 walls, 5x5m room')
+
+    def publish_walls(self):
+        arr = MarkerArray()
+        for i, ((ax, ay), (bx, by)) in enumerate(self.walls):
+            m = Marker()
+            m.header.frame_id = 'odom'
+            m.header.stamp = self.get_clock().now().to_msg()
+            m.ns = 'walls'
+            m.id = i
+            m.type = Marker.LINE_STRIP
+            m.action = Marker.ADD
+            m.scale.x = 0.05  # line thickness in meters
+            m.color.r = 0.0
+            m.color.g = 1.0
+            m.color.b = 0.0
+            m.color.a = 1.0
+            m.points = [
+                Point(x=float(ax), y=float(ay), z=0.0),
+                Point(x=float(bx), y=float(by), z=0.0),
+            ]
+            arr.markers.append(m)
+        self.wall_pub.publish(arr)
 
     def odom_callback(self, msg):
         # Sensor callbacks only update state — no work here.
