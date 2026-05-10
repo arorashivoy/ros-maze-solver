@@ -64,7 +64,6 @@ class ObstacleAvoider(Node):
             self.vel_pub.publish(Twist())
             return
 
-
         if self.nearest_front < self.safe_distance:
             cmd = Twist()
             cmd.angular.z = self.omega_turn
@@ -82,7 +81,8 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        pass
+        if rclpy.ok():
+            node.vel_pub.publish(Twist())
     finally:
         node.destroy_node()
         rclpy.shutdown()

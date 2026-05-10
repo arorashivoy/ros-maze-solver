@@ -13,8 +13,8 @@
 | Stage 0 — Environment Setup | `[x] Done` | 🟩🟩🟩🟩⬜ |
 | Stage 1 — ROS2 Fundamentals | `[x] Done` | 🟩🟩🟩🟩⬜ |
 | Stage 2 — Gazebo & Turtlebot3 | `[x] Done` | 🟩🟩🟩🟨⬜ |
-| Stage 3 — Sensor Reading | `[~] In Progress` | ⬜⬜⬜⬜⬜ |
-| Stage 4 — Wall-Following Controller | `[ ] Not Started` | ⬜⬜⬜⬜⬜ |
+| Stage 3 — Sensor Reading | `[x] Done` | 🟩🟩🟩🟩⬜ |
+| Stage 4 — Wall-Following Controller | `[x] Done` | 🟩🟩🟩🟩⬜ |
 | Stage 5 — SLAM & Mapping | `[ ] Not Started` | ⬜⬜⬜⬜⬜ |
 | Stage 6 — Autonomous Navigation (Nav2) | `[ ] Not Started` | ⬜⬜⬜⬜⬜ |
 | Stage 7 — Maze Solving | `[ ] Not Started` | ⬜⬜⬜⬜⬜ |
@@ -874,7 +874,7 @@ class LaserReader(Node):
         self.get_logger().info(f'Front distance: {front:.2f}m')
 ```
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. Used `beam_index()` to convert angles to array indices, ±30° front cone, `BEST_EFFORT` QoS. Tested against running sim.
 
 ### 3.2 — Visualize What the Robot "Sees"
 
@@ -885,7 +885,7 @@ Without running any navigation:
 
 Correlate what you see visually with what the numbers say.
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. Correlated RViz2 LaserScan display with logged numbers from laser_reader.
 
 ### 3.3 — Build a Simple Obstacle Avoider
 
@@ -926,7 +926,7 @@ This separation — sensor callbacks only update state, control loops only act o
 is a fundamental pattern in robotics software. It keeps things clean and prevents
 race conditions.
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. Implemented with ROS2 parameters (safe_distance, v_forward, omega_turn), scan staleness check (200ms timeout → stop), and ±30° front cone. Tested in sim.
 
 ---
 
@@ -1016,7 +1016,7 @@ Extend your laser reader to compute the minimum distance in:
 
 Remember: index calculation is `idx = int((angle - angle_min) / angle_increment)`
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. Implemented `zone_min()` helper with wrap-around index handling. Front ±20°, left 60°–120°.
 
 ### 4.2 — Implement Basic Wall Follower (State Machine)
 
@@ -1041,7 +1041,7 @@ Transition logic:
 - `FOLLOW_WALL`: Keep going. If front wall detected → `TURN_LEFT`
 - `TURN_LEFT`: Rotate right until front is clear → `FOLLOW_WALL`
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. Implemented FIND_WALL → FOLLOW_WALL → TURN_RIGHT state machine. Note: learning plan says TURN_LEFT but correct behavior for left-wall-follower hitting a front wall is TURN_RIGHT (clockwise).
 
 ### 4.3 — Add Proportional Control for Wall Distance
 
@@ -1059,7 +1059,7 @@ def follow_wall(self, left_dist):
 
 Tune `Kp` until the robot smoothly follows the wall without oscillation.
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. Implemented PD controller (not just P). Key fix: error sign is `left_dist - d_star` (not `d_star - left_dist`) for correct negative feedback. `wall_de` computed in scan_callback with proper dt normalization so D term has correct units (m/s) and is always fresh. Added `max_angular` clamp to prevent controller windup causing false TURN_RIGHT triggers.
 
 ### 4.4 — Test in Maze World
 
@@ -1072,7 +1072,7 @@ Watch the robot navigate. Take notes:
 - Does it get stuck in corners?
 - Is wall-following enough to solve the maze?
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. Tested in fake_scan 5×5m square room with Ignition sim. Robot follows left wall smoothly at kp=2.0, kd=2.0, max_angular=0.6.
 
 ### 4.5 — Add Parameters (Make it Configurable)
 
@@ -1095,7 +1095,7 @@ Now you can tune at launch time:
 ros2 run my_robot_pkg wall_follower --ros-args -p kp_gain:=3.0
 ```
 
-**Status:** `[ ]`
+**Status:** `[x]` — 2026-05-10. All tunable params declared: desired_wall_dist, wall_found_dist, front_threshold, clear_threshold, kp, kd, max_angular, linear_speed, turn_speed, control_period.
 
 ---
 

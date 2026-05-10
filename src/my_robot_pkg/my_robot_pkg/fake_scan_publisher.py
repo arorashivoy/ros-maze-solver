@@ -64,10 +64,10 @@ class FakeScanPublisher(Node):
             m.type = Marker.LINE_STRIP
             m.action = Marker.ADD
             m.scale.x = 0.05  # line thickness in meters
-            m.color.r = 0.0
-            m.color.g = 1.0
-            m.color.b = 0.0
-            m.color.a = 1.0
+            m.color.r = 0.4
+            m.color.g = 0.7
+            m.color.b = 0.4
+            m.color.a = 0.5
             m.points = [
                 Point(x=float(ax), y=float(ay), z=0.0),
                 Point(x=float(bx), y=float(by), z=0.0),
@@ -130,8 +130,13 @@ class FakeScanPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = FakeScanPublisher()
-    rclpy.spin(node)
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
