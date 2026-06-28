@@ -8,10 +8,11 @@
 
 ## 👤 About the User
 
-- **ROS2 experience level:** Near beginner. Has read a detailed learning plan but has not
-  yet written a single ROS2 node or built a workspace.
+- **ROS2 experience level:** Stages 0–4 complete. Has written multiple nodes (publisher,
+  subscriber, laser_reader, obstacle_avoider, wall_follower), launch files, and a custom
+  fake LiDAR. Comfortable with the ROS2 pub/sub pattern, TF frames, QoS, and parameters.
 - **Goal:** Build a maze-solving robot in Gazebo simulation, step by step, treating the
-  project as a **learning vehicle** — not a race to a finished product.
+  project as a **learning vehicle and PhD application artifact** — not a race to a finished product.
 - **What they care about:** Understanding *why* things work, not just having code that runs.
   A PhD-level curiosity about reasoning and fundamentals. Explanations always come before
   implementation.
@@ -131,22 +132,12 @@ For every formula or algorithm involving math, the assistant must:
    (e.g. a trig identity, a matrix inverse), state the identity by name and show
    why it applies here.
 
-2. **Draw an ASCII diagram.** Geometry, frames, vectors, ray casts, robot poses,
-   coordinate transforms, sensor zones — all of these get a top-down or side-view
-   sketch. Label axes, angles, distances, and frame names. The diagram comes
-   *before* the algebra; it's the picture the algebra describes.
-
-   ```
-       y
-       ↑
-       │       ●  obstacle (ax, ay)
-       │      ╱
-       │   t·D
-       │   ╱
-       │  ╱  α
-       │ ╱
-       O────────→ x   (robot at origin, facing +x)
-   ```
+2. **Draw a diagram using HTML/SVG.** Never use ASCII diagrams — they are not
+   expressive enough for geometry or graphs. Instead, generate a self-contained
+   HTML file at `/tmp/<concept>.html` with inline SVG for geometry and MathJax
+   for equations. Tell the user to open it with `open /tmp/<filename>.html`.
+   Use the dark Catppuccin theme established in `/tmp/slam_test.html`.
+   The diagram comes *before* the algebra.
 
 3. **Give the intuitive "why."** After the derivation, in 1–3 sentences, explain
    why the formula has the shape it does in plain English. ("The determinant ends
@@ -243,23 +234,30 @@ their `ros2_maze_robot_learning_plan.md`:
 ## 📁 Project Structure (Target — will be built over time)
 
 ```
-~/ros2_ws/                          ← ROS2 workspace (to be created)
+~/ros2_ws/
 ├── src/
-│   └── my_robot_pkg/               ← main package
+│   └── my_robot_pkg/
 │       ├── package.xml
 │       ├── setup.py
 │       ├── setup.cfg
 │       ├── launch/
-│       │   ├── hello_launch.py
-│       │   └── maze_solver.launch.py   ← final integration launch
+│       │   ├── hello_launch.py              ← Stage 1
+│       │   ├── turtlebot3_ign.launch.py     ← Stage 2+ (Ignition + two bridges)
+│       │   └── maze_solver.launch.py        ← Stage 7 (final integration)
+│       ├── worlds/
+│       │   └── turtlebot3_world.sdf         ← Ignition world (floor only)
+│       ├── models/
+│       │   └── turtlebot3_burger_ign/       ← Robot SDF for Ignition
 │       └── my_robot_pkg/
 │           ├── __init__.py
-│           ├── hello_publisher.py      ← Stage 1
-│           ├── hello_subscriber.py     ← Stage 1
-│           ├── laser_reader.py         ← Stage 3
-│           ├── obstacle_avoider.py     ← Stage 3
-│           ├── wall_follower.py        ← Stage 4
-│           └── explorer.py             ← Stage 7
+│           ├── hello_publisher.py           ← Stage 1
+│           ├── hello_subscriber.py          ← Stage 1
+│           ├── fake_scan_publisher.py       ← Stage 2+ (synthetic /scan via /odom, RELIABLE QoS)
+│           ├── laser_reader.py              ← Stage 3
+│           ├── obstacle_avoider.py          ← Stage 3
+│           ├── wall_follower.py             ← Stage 4
+│           ├── noisy_odom_publisher.py      ← Stage 5 (optional, for SLAM drift demo)
+│           └── explorer.py                  ← Stage 7
 ├── build/   (auto-generated)
 ├── install/ (auto-generated)
 └── log/     (auto-generated)
@@ -269,41 +267,58 @@ their `ros2_maze_robot_learning_plan.md`:
 
 ## 🚦 Where We Are Right Now
 
-**Current stage: Stage 3 — Reading Sensor Data**
+**Current stage: Stage 6 — Autonomous Navigation with Nav2 (next: Task 6.3 — Send Nav Goal from RViz2)**
 
-Stages 0, 1, and 2 are complete. Workspace at `~/ros2_ws/`, package `my_robot_pkg` built.
-Next up: Task 3.1 (laser_reader node), then Task 3.3 (obstacle_avoider — first real
-control loop).
+Stages 0–4 complete. The sim stack is fully set up and working.
 
-**Important architectural note (read before doing any sim work):**
+**Simulation architecture (read before doing any sim work):**
 
 Due to macOS limitations (Ignition LiDAR can't render headless; Gazebo Classic crashes
-inside `gazebo_ros_pkgs` on Apple Silicon), we are NOT using a real simulated LiDAR.
-Instead:
+on Apple Silicon), we are NOT using a real simulated LiDAR. The stack is:
 
-- **Physics, /odom, /cmd_vel, /tf, robot model** → Ignition Fortress (real simulation)
+- **Physics, /cmd_vel, /tf, robot model, /odom** → Ignition Fortress (real simulation)
   via `ros2 launch my_robot_pkg turtlebot3_ign.launch.py`
-- **/scan** → custom `fake_scan_publisher` Python node that does ray-segment intersection
-  against a hardcoded 5×5m square room, using /odom for the robot's pose
+- **/scan** → custom `fake_scan_publisher` node — ray-segment intersection against a
+  hardcoded 5×5m square room, using **/odom** for the robot pose
   Run: `ros2 run my_robot_pkg fake_scan_publisher --ros-args -p use_sim_time:=true`
+- **SLAM** → `ros2 launch slam_toolbox online_async_launch.py params_file:=$(ros2 pkg prefix my_robot_pkg)/share/my_robot_pkg/config/slam_toolbox_params.yaml use_sim_time:=true`
 
-This setup is interface-equivalent to a real LiDAR (same `LaserScan` message at same
-rate with same fields), so all downstream nodes (Stage 3+) are written exactly as they
-would be for a real robot. Walls are virtual — the robot can drive *through* them in
-Ignition; this is a feature, not a bug, because it forces the perception→action loop
-(Stage 4 wall-follower) to be the thing that prevents collisions.
+**Critical architectural point for SLAM (Stage 5+):**
+
+`fake_scan_publisher` subscribes to `/odom` and uses that pose for ray-casting.
+This means `/scan` and `/odom` are **the same signal** — SLAM sees consistent
+inputs but there is no independent ground truth separation.
+
+Consequence: Ignition's `/odom` is near-perfect in simulation (no wheel slip), so
+SLAM will build a clean map without ever needing to fire loop closure corrections.
+To observe SLAM's drift-correction mechanism actually work, **noisy odom is required**
+(Task 5.5): `noisy_odom_publisher.py` injects random-walk drift into `/odom` before
+both `fake_scan_publisher` and SLAM see it. This makes the scan geometry drift with
+the odom error, forcing SLAM to detect and correct it on loop closure — the observable
+PhD demo moment.
+
+**QoS note:** `/scan` is published with `RELIABLE` QoS (required for SLAM Toolbox
+compatibility). The original `BEST_EFFORT` caused silent message drops.
+
+**Stage 5 progress:**
+- ✅ Task 5.0 — Cyrill Stachniss lectures watched (Graph-Based SLAM + ICP)
+- ✅ Task 5.1 — SLAM Toolbox launching and receiving scans correctly
+- ✅ Task 5.2 — Map visualised in RViz2; outer walls detected cleanly; mid-grey interior patches are normal unknown (-1) cells, not artifacts
+- ✅ Task 5.3 — Save the map
+- ✅ Task 5.4 — Run wall follower while SLAM builds the map
+- ✅ Task 5.5 — Noisy odom publisher (loop closure visibly fires)
 
 **Files of interest:**
-- `~/ros2_ws/src/my_robot_pkg/launch/turtlebot3_ign.launch.py` — Ignition launch
-- `~/ros2_ws/src/my_robot_pkg/my_robot_pkg/fake_scan_publisher.py` — synthetic /scan
-- `~/ros2_ws/src/my_robot_pkg/worlds/turtlebot3_world.sdf` — Ignition world (no walls,
-  just floor — walls live only in `fake_scan_publisher.py`'s `self.walls` list)
+- `~/ros2_ws/src/my_robot_pkg/launch/turtlebot3_ign.launch.py` — Ignition launch + bridges
+- `~/ros2_ws/src/my_robot_pkg/my_robot_pkg/fake_scan_publisher.py` — synthetic /scan (uses /odom pose, RELIABLE QoS)
+- `~/ros2_ws/src/my_robot_pkg/config/slam_toolbox_params.yaml` — SLAM Toolbox config
+- `~/ros2_ws/src/my_robot_pkg/worlds/turtlebot3_world.sdf` — Ignition world (floor only; walls are virtual in fake_scan)
 
 **To start any session:**
 ```bash
 conda activate ros2          # sets TURTLEBOT3_MODEL, IGN_GAZEBO paths, fixes python alias
 cd ~/ros2_ws
-source install/setup.bash    # overlay your workspace packages
+source install/setup.zsh    # overlay your workspace packages (use .zsh, not .bash)
 ```
 
 ---
@@ -338,7 +353,7 @@ ign gazebo --version
 # Workspace build
 cd ~/ros2_ws
 colcon build --packages-select my_robot_pkg
-source install/setup.bash
+source install/setup.zsh
 
 # Inspect running system
 ros2 node list

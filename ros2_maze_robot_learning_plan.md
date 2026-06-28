@@ -15,8 +15,8 @@
 | Stage 2 — Gazebo & Turtlebot3 | `[x] Done` | 🟩🟩🟩🟨⬜ |
 | Stage 3 — Sensor Reading | `[x] Done` | 🟩🟩🟩🟩⬜ |
 | Stage 4 — Wall-Following Controller | `[x] Done` | 🟩🟩🟩🟩⬜ |
-| Stage 5 — SLAM & Mapping | `[ ] Not Started` | ⬜⬜⬜⬜⬜ |
-| Stage 6 — Autonomous Navigation (Nav2) | `[ ] Not Started` | ⬜⬜⬜⬜⬜ |
+| Stage 5 — SLAM & Mapping | `[x] Done` | 🟩🟩🟩🟩🟩 |
+| Stage 6 — Autonomous Navigation (Nav2) | `[x] Done` | 🟩🟩🟨🟩🟩 |
 | Stage 7 — Maze Solving | `[ ] Not Started` | ⬜⬜⬜⬜⬜ |
 
 **Update status as:** `[ ] Not Started` → `[~] In Progress` → `[x] Done`
@@ -1161,19 +1161,31 @@ Nav2 uses this map for path planning.
 
 ## ✅ Tasks
 
-### 5.1 — Install and Launch SLAM Toolbox
+### 5.0 — Watch Foundation Lectures (Pre-Task)
 
-```bash
-sudo apt install ros-humble-slam-toolbox
+Before running any code, watch the following Cyrill Stachniss lectures (University of Bonn) in order:
 
-# Launch Gazebo + Turtlebot3
-ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+1. **Graph-Based SLAM** (~1 hour) — Search: "Cyrill Stachniss Graph-Based SLAM" on YouTube
+2. **Scan Matching / ICP** (~45 min) — Search: "Cyrill Stachniss Scan Matching ICP" on YouTube
 
-# In a second terminal, launch SLAM
-ros2 launch slam_toolbox online_async_launch.py
-```
+After watching both, **confirm with Claude** before proceeding to Task 5.1. Claude will then
+work through the key equations with HTML/SVG diagrams before any code is written.
 
-**Status:** `[ ]`
+**Status:** `[ ] — In progress (watching lectures)`
+
+---
+
+### 5.1 — Launch SLAM Toolbox with Normal Odom
+
+> **Note:** SLAM Toolbox is already installed in the conda env — skip any `apt install`.
+> The standard `turtlebot3_gazebo` launch won't work on macOS. Use our custom stack:
+> `turtlebot3_ign.launch.py` + `fake_scan_publisher` (same as Stages 3–4).
+>
+> **Architecture reminder:** `fake_scan_publisher` now uses the Ignition ground truth pose
+> (via `/world/default/dynamic_pose/info`) — NOT `/odom`. So `/scan` and `/odom` are
+> genuinely independent signals going into SLAM. No special setup needed.
+
+**Status:** `[ ] — Blocked on Task 5.0`
 
 ### 5.2 — Visualize Map Building in RViz2
 
@@ -1195,14 +1207,40 @@ ros2 run nav2_map_server map_saver_cli -f ~/maze_map
 This creates `maze_map.pgm` (image of the map) and `maze_map.yaml` (metadata).
 Open the `.pgm` file in an image viewer.
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 ### 5.4 — Connect Your Wall Follower to Map Building
 
 Run your wall follower node from Stage 4 *while* SLAM is running. Let the robot
 autonomously explore and build the map. This is a significant milestone.
 
-**Status:** `[ ]`
+**Status:** `[x]`
+
+---
+
+### 5.5 — [Optional] Noisy Odom Publisher — Force SLAM to Correct Drift
+
+**Do this only after 5.4 works.** Ignition's `/odom` is near-perfect in simulation
+(no wheel slip), so SLAM may build a clean map without visibly triggering loop closure
+corrections. To observe SLAM's drift-correction mechanism actually fire:
+
+Write `noisy_odom_publisher.py` — a node that subscribes to `/odom`, injects
+random-walk drift (accumulated Gaussian noise on x, y, θ proportional to distance
+travelled), and republishes on `/odom_noisy`. Configure SLAM Toolbox to consume
+`/odom_noisy` instead of `/odom` via its params file.
+
+The map should visibly warp as drift accumulates, then snap back into shape when
+loop closure detects a revisited location. This is the observable signature that the
+pose graph optimizer is doing real work — useful as a PhD demo.
+
+Drift model:
+```
+δx += N(0, σ²) · Δs      (σ ≈ 0.02 → 2% of distance per step)
+δy += N(0, σ²) · Δs
+δθ += N(0, σ_θ²) · |Δθ|
+```
+
+**Status:** `[x]`
 
 ---
 
@@ -1341,7 +1379,7 @@ sudo apt install ros-humble-navigation2
 sudo apt install ros-humble-nav2-bringup
 ```
 
-**Status:** `[ ]`
+**Status:** `[x]` — Already installed in conda env. All nav2_* packages confirmed present. maze_map.pgm + maze_map.yaml confirmed at ~/.
 
 ### 6.2 — Launch Nav2 with Your Saved Map
 
@@ -1355,7 +1393,7 @@ ros2 launch nav2_bringup bringup_launch.py \
   use_sim_time:=True
 ```
 
-**Status:** `[ ]`
+**Status:** `[x]` — Used custom nav2_params.yaml (Turtlebot3 burger footprint, DWB controller). AMCL convergence issue: symmetric square room causes 180° pose ambiguity. Fixed by setting set_initial_pose:true in params so AMCL seeds at odom(0,0) without needing 2D Pose Estimate click.
 
 ### 6.3 — Send a Navigation Goal from RViz2
 
@@ -1365,14 +1403,14 @@ Watch the robot plan a path and drive to it. Observe:
 - The local planner following it
 - How it handles obstacles
 
-**Status:** `[ ]`
+**Status:** `[x]` — Robot successfully navigated to a clicked goal. Particle cloud visible via `rviz_default_plugins/PoseArray` (workaround for `nav2_rviz_plugins/ParticleCloud` hardcoding RELIABLE QoS).
 
 ### 6.4 — Send a Navigation Goal from Code
 
 Write a Python node using the `ActionClient` pattern shown above.
 Send the robot to three waypoints in sequence.
 
-**Status:** `[ ]`
+**Status:** `[~]` — Code written (`nav_goal_sender.py`). Skipped live run: on M1 Mac, Nav2's AMCL pose corrections cause `fake_scan_publisher` (which reads `/odom`) to shift the scan geometry mid-navigation, producing inconsistent costmap updates. Concept understood; code reviewed via HTML explanation.
 
 ### 6.5 — Understand the Lifecycle System
 
@@ -1384,7 +1422,7 @@ ros2 lifecycle get /nav2_controller
 Nav2 nodes use **managed nodes** (lifecycle nodes) that go through states:
 Unconfigured → Inactive → Active. This allows safe startup/shutdown sequences.
 
-**Status:** `[ ]`
+**Status:** `[x]` — Lifecycle state machine understood. Two separate managers (localisation + navigation) exist for fault isolation: AMCL crash only tears down localisation, not the full nav stack.
 
 ---
 

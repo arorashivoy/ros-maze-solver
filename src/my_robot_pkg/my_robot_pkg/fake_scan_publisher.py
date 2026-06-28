@@ -2,7 +2,7 @@ import math
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
@@ -37,12 +37,18 @@ class FakeScanPublisher(Node):
         self.y = 0.0
         self.yaw = 0.0
 
-        # Best-effort QoS for sensor data (the convention for /scan).
-        sensor_qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
+        sensor_qos = QoSProfile(
+            depth=10,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+
+        self.declare_parameter('odom_topic', '/odom')
+        odom_topic = self.get_parameter('odom_topic').value
 
         self.scan_pub = self.create_publisher(LaserScan, '/scan', sensor_qos)
         self.odom_sub = self.create_subscription(
-            Odometry, '/odom', self.odom_callback, 10
+            Odometry, odom_topic, self.odom_callback, 10
         )
         self.timer = self.create_timer(self.publish_period, self.publish_scan)
 
