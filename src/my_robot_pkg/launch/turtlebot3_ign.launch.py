@@ -69,6 +69,19 @@ def generate_launch_description():
         output='screen',
     )
 
+    # Bridge Ignition's ground-truth world-frame poses to ROS2 as a PoseArray.
+    # fake_scan_publisher reads poses[0] which is always the 'burger' model
+    # (entity order is deterministic from the SDF). This is fully independent
+    # of the /odom path that SLAM will consume.
+    ground_truth_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '/world/default/dynamic_pose/info@geometry_msgs/msg/PoseArray[ignition.msgs.Pose_V',
+        ],
+        output='screen',
+    )
+
     # robot_state_publisher reads the URDF and publishes TF for all fixed/joint links.
     # use_sim_time=True makes it sync to the /clock topic from Gazebo.
     robot_state_publisher = Node(
@@ -85,5 +98,6 @@ def generate_launch_description():
         gz_sim,
         spawn_robot,
         bridge,
+        ground_truth_bridge,
         robot_state_publisher,
     ])

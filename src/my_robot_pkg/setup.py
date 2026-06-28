@@ -16,6 +16,7 @@ setup(
         (os.path.join('share', package_name, 'worlds'), glob('worlds/*.sdf')),
         (os.path.join('share', package_name, 'models', 'turtlebot3_burger_ign'),
             glob('models/turtlebot3_burger_ign/*')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -31,6 +32,8 @@ setup(
             'laser_reader = my_robot_pkg.laser_reader:main',
             'obstacle_avoider = my_robot_pkg.obstacle_avoider:main',
             'wall_follower = my_robot_pkg.wall_follower:main',
+            'noisy_odom_publisher = my_robot_pkg.noisy_odom_publisher:main',
+            'nav_goal_sender = my_robot_pkg.nav_goal_sender:main',
         ],
     },
 )
