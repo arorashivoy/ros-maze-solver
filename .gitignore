@@ -27,3 +27,7 @@ Thumbs.db
 *.bag
 *.db3
 *.mcap
+
+# Local-only working docs — not published
+CLAUDE.md
+ros2_maze_robot_learning_plan.md
