@@ -22,7 +22,7 @@ setup(
     zip_safe=True,
     maintainer='Shivoy Arora',
     maintainer_email='shivoy1183@gmail.com',
-    description='TODO: Package description',
+    description='ROS 2 Humble workspace for a differential-drive robot: wall-following control, LiDAR mapping with slam_toolbox and Nav2 path planning, runnable headless on Apple Silicon.',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [

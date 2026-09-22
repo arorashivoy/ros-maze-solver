@@ -3,7 +3,7 @@
 <package format="3">
   <name>my_robot_pkg</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>ROS 2 Humble workspace for a differential-drive robot: wall-following control, LiDAR mapping with slam_toolbox and Nav2 path planning, runnable headless on Apple Silicon.</description>
   <maintainer email="shivoy1183@gmail.com">Shivoy Arora</maintainer>
   <license>Apache-2.0</license>
 

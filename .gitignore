@@ -31,3 +31,8 @@ Thumbs.db
 # Local-only working docs — not published
 CLAUDE.md
 ros2_maze_robot_learning_plan.md
+
+# jukit scratch state
+.jukit/
+frames_*.gv
+frames_*.pdf

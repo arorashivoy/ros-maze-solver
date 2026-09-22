@@ -228,4 +228,4 @@ change the scan — edit the `walls` list in that node instead.
 
 ## License
 
-Apache-2.0 — see `src/my_robot_pkg/LICENSE`.
+Apache-2.0 — see `LICENSE`.
